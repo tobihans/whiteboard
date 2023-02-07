@@ -13,8 +13,8 @@
     "pretty-quick": "pretty-quick",
     "format": "prettier --write .",
     "style": "prettier --check .",
-    "windi": "windicss src/index.html -mto src/css/app.css --style",
-    "windi:dev": "windicss src/index.html -to src/css/app.css --dev --style"
+    "tailwind": "npx tailwindcss -i ./src/css/tailwind.css -o ./src/css/app.css --watch",
+    "tailwind:dev": "npx tailwindcss -i ./src/css/tailwind.css -o ./src/css/app.css --watch"
   },
   "repository": {
     "type": "git",
@@ -45,6 +45,7 @@
     "signature_pad": "^4.0.1",
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.4.0",
+    "tippy.js": "^6.3.7",
     "uuid": "^8.1.0",
     "webdav": "^4.8.0"
   },
@@ -73,12 +74,12 @@
     "prettier": "^2.5.1",
     "pretty-quick": "^2.0.1",
     "style-loader": "^1.1.4",
+    "tailwindcss": "^3.2.4",
     "vanilla-picker": "^2.12.1",
     "webpack": "^5.67.0",
     "webpack-cli": "^4.9.2",
     "webpack-dev-server": "^4.7.3",
-    "webpack-merge": "^5.8.0",
-    "windicss": "^3.5.6"
+    "webpack-merge": "^5.8.0"
   },
   "author": "Cracker0dks",
   "license": "MIT",

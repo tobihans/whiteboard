@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "style": "prettier --check .",
     "tailwind": "npx tailwindcss -i ./src/css/tailwind.css -o ./src/css/app.css --watch",
-    "tailwind:dev": "npx tailwindcss -i ./src/css/tailwind.css -o ./src/css/app.css --watch"
+    "tailwind:dev": "npx tailwindcss -i ./src/css/tailwind.css -o ./src/css/app.css --watch",
+    "serve": "scripts/serve.sh"
   },
   "repository": {
     "type": "git",

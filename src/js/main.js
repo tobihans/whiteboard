@@ -674,6 +674,7 @@ function initWhiteboard() {
         // Show the whiteboard and activate tooltips
         $("body").show();
         setupToolTips();
+        $('button[tool="pen"]').click(); // Select the pen as active tool
     });
 
     //Prevent site from changing tab on drag&drop

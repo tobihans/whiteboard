@@ -15,16 +15,10 @@ const pdfjsLib = require("pdfjs-dist");
 
 const urlParams = new URLSearchParams(window.location.search);
 let whiteboardId = urlParams.get("whiteboardid");
-const randomid = urlParams.get("randomid");
-
-if (randomid) {
-    whiteboardId = uuidv4();
-    urlParams.delete("randomid");
-    window.location.search = urlParams;
-}
 
 if (!whiteboardId) {
-    whiteboardId = "myNewWhiteboard";
+    // Set a random ID if none is provided
+    whiteboardId = uuidv4();
 }
 
 whiteboardId = unescape(encodeURIComponent(whiteboardId)).replace(/[^a-zA-Z0-9\-]/g, "");
@@ -163,7 +157,6 @@ function initWhiteboard() {
         // request whiteboard from server
         $.get(subdir + "/api/loadwhiteboard", { wid: whiteboardId, at: accessToken }).done(
             function (data) {
-                console.log(data);
                 whiteboard.loadData(data);
                 if (copyfromwid && data.length == 0) {
                     //Copy from witheboard if current is empty and get parameter is given
@@ -302,22 +295,20 @@ function initWhiteboard() {
             });
 
         // upload image button
+        document.getElementById("manualFileUpload").addEventListener(
+            "change",
+            function (e) {
+                if (ReadOnlyService.readOnlyActive) return;
+                e.originalEvent = { dataTransfer: { files: e.target.files } };
+                handleFileUploadEvent(e);
+            },
+            false
+        );
         $("#addImgToCanvasBtn")
             .off("click")
             .click(function () {
                 if (ReadOnlyService.readOnlyActive) return;
-                showBasicAlert(`Please drag the image into the browser.<br>
-                Or upload here: <input type="file" id="manualFileUpload" name="myfile" />`);
-                document.getElementById("manualFileUpload").addEventListener(
-                    "change",
-                    function (e) {
-                        $(".basicalert").remove();
-                        if (ReadOnlyService.readOnlyActive) return;
-                        e.originalEvent = { dataTransfer: { files: e.target.files } };
-                        handleFileUploadEvent(e);
-                    },
-                    false
-                );
+                document.getElementById("manualFileUpload")?.click();
             });
 
         // save image as imgae
@@ -346,102 +337,6 @@ function initWhiteboard() {
                     }
                 );
             });
-
-        $("#shareWhiteboardBtn")
-            .off("click")
-            .click(() => {
-                function urlToClipboard(whiteboardId = null) {
-                    const { protocol, host, pathname, search } = window.location;
-                    const basePath = `${protocol}//${host}${pathname}`;
-                    const getParams = new URLSearchParams(search);
-
-                    // Clear ursername from get parameters
-                    getParams.delete("username");
-
-                    if (whiteboardId) {
-                        // override whiteboardId value in URL
-                        getParams.set("whiteboardid", whiteboardId);
-                    }
-
-                    const url = `${basePath}?${getParams.toString()}`;
-                    $("<textarea/>")
-                        .appendTo("body")
-                        .val(url)
-                        .select()
-                        .each(() => {
-                            document.execCommand("copy");
-                        })
-                        .remove();
-                }
-
-                // UI related
-                // clear message
-                $("#shareWhiteboardDialogMessage").toggleClass("displayNone", true);
-
-                $("#shareWhiteboardDialog").toggleClass("displayNone", false);
-                $("#shareWhiteboardDialogGoBack")
-                    .off("click")
-                    .click(() => {
-                        $("#shareWhiteboardDialog").toggleClass("displayNone", true);
-                    });
-
-                $("#shareWhiteboardDialogCopyReadOnlyLink")
-                    .off("click")
-                    .click(() => {
-                        urlToClipboard(ConfigService.correspondingReadOnlyWid);
-
-                        $("#shareWhiteboardDialogMessage")
-                            .toggleClass("displayNone", false)
-                            .text("Read-only link copied to clipboard ✓");
-                    });
-
-                $("#shareWhiteboardDialogCopyReadWriteLink")
-                    .toggleClass("displayNone", ConfigService.isReadOnly)
-                    .click(() => {
-                        $("#shareWhiteboardDialogMessage")
-                            .toggleClass("displayNone", false)
-                            .text("Read/write link copied to clipboard ✓");
-                        urlToClipboard();
-                    });
-            });
-
-        $("#displayWhiteboardInfoBtn")
-            .off("click")
-            .click(() => {
-                InfoService.toggleDisplayInfo();
-            });
-
-        var btnsMini = false;
-        $("#minMaxBtn")
-            .off("click")
-            .click(function () {
-                if (!btnsMini) {
-                    $("#toolbar").find(".btn-group:not(.minGroup)").hide();
-                    $(this).find("#minBtn").hide();
-                    $(this).find("#maxBtn").show();
-                } else {
-                    $("#toolbar").find(".btn-group").show();
-                    $(this).find("#minBtn").show();
-                    $(this).find("#maxBtn").hide();
-                }
-                btnsMini = !btnsMini;
-            });
-
-        // load json to whiteboard
-        $("#myFile").on("change", function () {
-            var file = document.getElementById("myFile").files[0];
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                try {
-                    var j = JSON.parse(e.target.result);
-                    whiteboard.loadJsonData(j);
-                } catch (e) {
-                    showBasicAlert("File was not a valid JSON!");
-                }
-            };
-            reader.readAsText(file);
-            $(this).val("");
-        });
 
         // On thickness slider change
         $("#whiteboardThicknessSlider").on("input", function () {
@@ -480,12 +375,11 @@ function initWhiteboard() {
         });
 
         function handleFileUploadEvent(e) {
-            console.log(e);
+            e.preventDefault();
+            e.stopPropagation();
+
             if (e.originalEvent.dataTransfer) {
                 if (e.originalEvent.dataTransfer.files.length) {
-                    //File from harddisc
-                    e.preventDefault();
-                    e.stopPropagation();
                     var filename = e.originalEvent.dataTransfer.files[0]["name"];
                     if (isImageFileName(filename)) {
                         var blob = e.originalEvent.dataTransfer.files[0];
@@ -818,43 +712,9 @@ function initWhiteboard() {
                 whiteboard.addImgToCanvasByUrl(
                     `${rootUrl}/uploads/${correspondingReadOnlyWid}/${filename}`
                 ); //Add image to canvas
-                console.log("Image uploaded!");
             },
             error: function (err) {
                 showBasicAlert("Failed to upload frame: " + JSON.stringify(err));
-            },
-        });
-    }
-
-    function saveWhiteboardToWebdav(base64data, webdavaccess, callback) {
-        var date = +new Date();
-        $.ajax({
-            type: "POST",
-            url: document.URL.substr(0, document.URL.lastIndexOf("/")) + "/api/upload",
-            data: {
-                imagedata: base64data,
-                wid: whiteboardId,
-                date: date,
-                at: accessToken,
-                webdavaccess: JSON.stringify(webdavaccess),
-            },
-            success: function (msg) {
-                showBasicAlert("Whiteboard was saved to Webdav!", {
-                    headercolor: "#5c9e5c",
-                });
-                console.log("Image uploaded to webdav!");
-                callback();
-            },
-            error: function (err) {
-                console.error(err);
-                if (err.status == 403) {
-                    showBasicAlert(
-                        "Could not connect to Webdav folder! Please check the credentials and paths and try again!"
-                    );
-                } else {
-                    showBasicAlert("Unknown Webdav error! ", err);
-                }
-                callback(err);
             },
         });
     }
